@@ -48,6 +48,18 @@ You may also specify `Array` lookups within the source `Object` to be copied to 
 }
 ```
 
+You can even specify an array of object keys to be copied to a single destination with `[key1,key2]` notation in the mapping:
+
+```javascript
+{
+  "[foo,bar]": "bar",
+  "[baz,bar]": {
+    "key": "foo",
+    "transfrom": ([baz, bar]) => `${baz} ${bar}`
+    },
+}
+```
+
 ### Destination
 
 You may specify the destination as:
@@ -68,7 +80,7 @@ var map = {
   "foo": [
     {
       key: "foo",
-      transform: function (value) { 
+      transform: function (value) {
         return value + "_foo";
       }
     },
@@ -91,7 +103,7 @@ var dest = objectMapper(src, map);
 
 // dest.foo: 'blah_foo'
 // dest.baz: 'blah_baz'
-// dest.bar: 'something' 
+// dest.bar: 'something'
 ```
 
 #### Object
@@ -273,6 +285,22 @@ I use the **object-mapper's** `merge()` method to map values from records
 returned from a database into horribly complex objects that will be eventually
 turned in to XML.
 
+## Map Generation
+ I recently added a simple map generation tool, so implify creating maps between known objects. its currently fairly barebones, it only maps the first layer of an object, but it can take a lot of the boiler plate off your hands.
+
+ ```javascript
+  const src = {key1: 'yo', key2: 1, key3: [], CamelCaseKey: 'foo', 1:'bar'};
+  const dest = {KEY1: 'yo', key_2: 1, 'key 3':[], 'camel_case_key':'not really', } ;
+  const map = generate(src, dest, {ignoreWhiteSpace: true, ignoreCase: true, ignoreSnake: true, ignoreType: true});
+/** generates:
+  { '1': '1',
+  key1: 'KEY1',
+  key2: 'key_2',
+  key3: 'key 3',
+  CamelCaseKey: 'camel_case_key' }
+  **/
+
+ ```
 
 ## License
 

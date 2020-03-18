@@ -2,7 +2,8 @@
 
 //const om = require('object-mapper')
 const om = require('../')
-  , test = require('tape')
+  ,{generate} = require('../')
+  , test = require('tape');
   // , performance = require('perf_hooks').performance
 
 test('SPLIT with complicated key', function (t) {
@@ -12,7 +13,7 @@ test('SPLIT with complicated key', function (t) {
   t.deepEqual(result, expect);
   t.end();
 });
-  
+
 test('PARSE with complicated key', function (t) {
   var k = 'abc[].def[42]+.ghi?.j..k\\.l\\\\.m.'
   var expect = [{name: 'abc'},{ix: ''},{name: 'def'},{ix: '42', add: true},{name: 'ghi', nulls: true},{name: 'j'},{name: 'k.l\\\\'},{name: 'm'}]
@@ -20,7 +21,7 @@ test('PARSE with complicated key', function (t) {
   t.deepEqual(result, expect);
   t.end();
 });
-  
+
 test('PARSE with simple key', function (t) {
   var k = 'abc'
   var expect = [{name: 'abc'}]
@@ -172,7 +173,7 @@ var expect =
   t.deepEqual(result, expect);
   t.end();
 });
-  
+
 
 test('get value - one level deep', function (t) {
 
@@ -2117,7 +2118,7 @@ test('Multi-level array issue #29', function (t) {
     "foo[].name": "bar[].label",
     "foo[].things[]": "bar[].values[]"
   };
-    
+
   var expect = {bar: [{
     label: "a",
     values: ["a1", "a2"]
@@ -2126,7 +2127,7 @@ test('Multi-level array issue #29', function (t) {
     label: "b",
     values: ["b1", "b2"]
   }]}
-  
+
   var result = om(orig, map);
 
   t.deepEqual(result, expect);
@@ -2172,7 +2173,7 @@ test('Ensure that multi-dimentional arrays work #41', function (t) {
         }
     ]
   };
-  
+
   var expect = null
   var result = om.getKeyValue(src, "arr[].arr[].id");
 
@@ -2188,13 +2189,13 @@ test('Ensure that multi-dimentional arrays work #41', function (t) {
         }
     ]
   };
-  
+
   var map = {
     "arr[].id": "arr[].id",
     "arr[].arr[].id": "arr[].arr[].id",
     "arr[].arr[].arr[].id": "arr[].arr[].arr[].id"
   };
-  
+
   var expect = {"arr":[{"id":1}]};
 
 
@@ -2211,18 +2212,18 @@ test('Make sure no objects are created without data #48', function (t) {
       "bar": null
     }
   };
-  
+
   var expect = {
     foo:{
       a:1234
     }
   };
-  
+
   var map = {
     'foo.bar' : 'bar.bar',
     'a': 'foo.a'
    };
-  
+
 
   var result = om(obj, map);
 
@@ -2609,7 +2610,7 @@ test("issue #69: should create an array of values", t => {
     { identification: 1235, name: 'John Doe'},
     { identification: 9876, name: 'Brock Doe' }];
 
-  var map = { identification: 'id'};
+  var map = { '[].identification': 'id'};
 
   var expect = { id: [ 1235, 9876 ] };
 
@@ -2638,21 +2639,142 @@ test("issue #71: mapping array should not fail when not defined", t => {
   t.end();
 });
 
-test("issue #74: mapping empty array should result in empty array", t => {
-  const src = {nbMember : 5, activityList: []};
+// test("issue #74: mapping empty array should result in empty array", t => {
+//   const src = {nbMember : 5, activityList: []};
 
-  const map = {
-    'nbMember': 'maxPlayerCount'
-    , 'activityList[].id': 'activityList[].id'
-  };
+//   const map = {
+//     'nbMember': 'maxPlayerCount'
+//     , 'activityList[].id': 'activityList[].id'
+//   };
 
-  const expect = {
-    activityList: []
-    , maxPlayerCount: 5
-  }
+//   const expect = {
+//     activityList: []
+//     , maxPlayerCount: 5
+//   }
 
+//   const result = om(src, map);
+
+//   t.deepEqual(result, expect);
+//   t.end();
+// });
+
+test("should allow multiple source keys to be assigned to a destination", t => {
+  const src = {k1: 'i', k2: 'am', k3: 'a string'};
+  const map = { '[k1,k2,k3]': 'str'};
+  const expect = {str: ['i', 'am', 'a string']};
   const result = om(src, map);
-
   t.deepEqual(result, expect);
   t.end();
 });
+
+test("should avoid other array edge cases", t => {
+  const src = [{k1: {k3: ['foo', 'bar']} }];
+  const map = { '[].k1.k3[]': 'str'};
+  const expect = { str: [ [ 'foo', 'bar' ] ] };
+  const result = om(src, map);
+  t.deepEqual(result, expect);
+  t.end();
+});
+
+test("should allow multiple source key maps to include spaces between keys", t => {
+  const src = {k1: 'i', k2: 'am', k3: 'a string'};
+  const map = { '[k1, k2, k3]': 'str'};
+  const expect = {str: ['i', 'am', 'a string']};
+  const result = om(src, map);
+  t.deepEqual(result, expect);
+  t.end();
+});
+
+test("should allow multiple source keys to be transformed", t => {
+  const src = {k1: 'i', k2: 'am', k3: 'a string'};
+  const map = { '[k1, k2, k3]': {
+    key: 'str',
+    transform: (data) => data.join(' ')
+  }};
+  const expect = {str: 'i am a string'};
+  const result = om(src, map);
+  t.deepEqual(result, expect);
+  t.end();
+});
+
+test("should omit null entries", t => {
+  const src = {k1: 'i', k2: 'am' };
+  const map = { '[k1, k2, k3]': {
+    key: 'str',
+  }};
+  const expect = {str: ['i', 'am']};
+  const result = om(src, map);
+  t.deepEqual(result, expect);
+  t.end();
+});
+test("should allow null entries when dest is nullable", t => {
+  const src = {k1: 'i', k2: 'am' };
+  const map = { '[k1, k2, k3]': {
+    key: 'str?',
+  }};
+  const expect = {str: ['i', 'am', null]};
+  const result = om(src, map);
+  t.deepEqual(result, expect);
+  t.end();
+});
+
+test("generate should create a map object of all common keys", t => {
+  const src = {key1: 'yo', key2: 1, key3: []};
+  const dest = {key1: 'yo', key2: 1};
+  const map = generate(src, dest);
+  const expect = {key1: 'key1', key2: 'key2'}
+  t.deepEqual(map, expect);
+  t.end();
+
+});
+
+test("generate should create a map object of all common keys when ignore type is enabled it should match '1' to 1", t => {
+  const src = {'1': 'yo', key2: 1, key3: []};
+  const dest = {1: 'yo', key2: 1};
+  const map = generate(src, dest, {ignoreType: true});
+  const expect = {1: '1', key2: 'key2'}
+  t.deepEqual(map, expect);
+  t.end();
+
+});
+
+test("generate should create a map object ignoring case", t => {
+  const src = {key1: 'yo', key2: 1, key3: []};
+  const dest = {KEY1: 'yo', key_2: 1, 'key 3':[]} ;
+  const map = generate(src, dest, {ignoreCase: true});
+  const expect = {key1: 'KEY1'}
+  t.deepEqual(map, expect);
+  t.end();
+
+});
+
+
+test("generate should create a map object ignoring snake case", t => {
+  const src = {key1: 'yo', key2: 1, key3: []};
+  const dest = {KEY1: 'yo', key_2: 1, 'key 3':[]} ;
+  const map = generate(src, dest, {ignoreSnake: true});
+  const expect = {key2: 'key_2'}
+  t.deepEqual(map, expect);
+  t.end();
+
+});
+
+
+test("generate should create a map object ignoring whitespace", t => {
+  const src = {key1: 'yo', key2: 1, key3: []};
+  const dest = {KEY1: 'yo', key_2: 1, 'key 3':[]} ;
+  const map = generate(src, dest, {ignoreWhiteSpace: true});
+  const expect = {key3: 'key 3'}
+  t.deepEqual(map, expect);
+  t.end();
+
+});
+
+test('foo', t => {
+  const src = {key1: 'yo', key2: 1, key3: [], CamelCaseKey: 'foo', 1:'bar'};
+  const dest = {KEY1: 'yo', key_2: 1, 'key 3':[], 'camel_case_key':'not really', '1':1 } ;
+  const map = generate(src, dest, {ignoreWhiteSpace: true, ignoreCase: true, ignoreSnake: true, ignoreType: true});
+
+  console.log(map);
+  t.end();
+})
