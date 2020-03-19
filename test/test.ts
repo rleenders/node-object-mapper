@@ -1,15 +1,14 @@
 "use strict";
 
-//const om = require('object-mapper')
-const om = require('../')
-  ,{generate} = require('../')
-  , test = require('tape');
-  // , performance = require('perf_hooks').performance
+import {objectMapper, generate, parse, split, getKeyValue, setKeyValue} from '../index';
+
+import * as test from 'tape';
+// const test = require('tape');
 
 test('SPLIT with complicated key', function (t) {
   var k = 'abc.def.ghi.j..k\\.l\\\\.m.'
   var expect = ['abc','def','ghi','j','','k.l\\\\','m','']
-  var result = om.split(k, '.')
+  var result = split(k, '.')
   t.deepEqual(result, expect);
   t.end();
 });
@@ -17,7 +16,7 @@ test('SPLIT with complicated key', function (t) {
 test('PARSE with complicated key', function (t) {
   var k = 'abc[].def[42]+.ghi?.j..k\\.l\\\\.m.'
   var expect = [{name: 'abc'},{ix: ''},{name: 'def'},{ix: '42', add: true},{name: 'ghi', nulls: true},{name: 'j'},{name: 'k.l\\\\'},{name: 'm'}]
-  var result = om.parse(k, '.')
+  var result = parse(k, '.')
   t.deepEqual(result, expect);
   t.end();
 });
@@ -25,7 +24,7 @@ test('PARSE with complicated key', function (t) {
 test('PARSE with simple key', function (t) {
   var k = 'abc'
   var expect = [{name: 'abc'}]
-  var result = om.parse(k)
+  var result = parse(k)
   t.deepEqual(result, expect);
   t.end();
 });
@@ -33,7 +32,7 @@ test('PARSE with simple key', function (t) {
 test('PARSE abc? (simple key allowing nulls)', function (t) {
   var k = 'abc?'
   var expect = [{name: 'abc', nulls: true}]
-  var result = om.parse(k)
+  var result = parse(k)
   t.deepEqual(result, expect);
   t.end();
 });
@@ -41,63 +40,63 @@ test('PARSE abc? (simple key allowing nulls)', function (t) {
 test('PARSE with simple empty array key', function (t) {
   var k = 'abc[]'
   var expect = [{name: 'abc'}, {ix: ''}]
-  var result = om.parse(k)
+  var result = parse(k)
   t.deepEqual(result, expect);
   t.end();
 });
 test('PARSE with no key empty array key', function (t) {
   var k = '[]'
   var expect = [{ix: ''}]
-  var result = om.parse(k)
+  var result = parse(k)
   t.deepEqual(result, expect);
   t.end();
 });
 test('PARSE with nothing', function (t) {
   var k = ''
   var expect = []
-  var result = om.parse(k)
+  var result = parse(k)
   t.deepEqual(result, expect);
   t.end();
 });
 test('PARSE with simple dot notation key', function (t) {
   var k = 'abc.def'
   var expect = [{name: 'abc'}, {name: 'def'}]
-  var result = om.parse(k)
+  var result = parse(k)
   t.deepEqual(result, expect);
   t.end();
 });
 test('PARSE with deep dot notation key', function (t) {
   var k = 'a.b.c.d.e.f'
   var expect = [{name: 'a'},{name: 'b'},{name: 'c'},{name: 'd'},{name: 'e'},{name: 'f'}]
-  var result = om.parse(k)
+  var result = parse(k)
   t.deepEqual(result, expect);
   t.end();
 });
 test('PARSE with deep brackets', function (t) {
   var k = 'abc[].def'
   var expect = [{name: 'abc'},{ix: ''},{name: 'def'}]
-  var result = om.parse(k)
+  var result = parse(k)
   t.deepEqual(result, expect);
   t.end();
 });
 test('PARSE with deep brackets and instruction to add together', function (t) {
   var k = 'abc[]+.def'
   var expect = [{name: 'abc'},{ix: '', add: true},{name: 'def'}]
-  var result = om.parse(k)
+  var result = parse(k)
   t.deepEqual(result, expect);
   t.end();
 });
 test('PARSE with deep brackets and instruction to add nulls', function (t) {
   var k = 'abc[]+.def?'
   var expect = [{name: 'abc'},{ix: '', add: true},{name: 'def', nulls: true}]
-  var result = om.parse(k)
+  var result = parse(k)
   t.deepEqual(result, expect);
   t.end();
 });
 test('PARSE with deep brackets', function (t) {
   var k = '[].def'
   var expect = [{ix: ''},{name: 'def'}]
-  var result = om.parse(k)
+  var result = parse(k)
   t.deepEqual(result, expect);
   t.end();
 });
@@ -106,7 +105,7 @@ test('MAP with empty default on missing key', function (t) {
   var map = {'undefined_key': {key:'key_with_default', default:''}}
   var expect = {key_with_default: ''}
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
   t.deepEqual(result, expect);
   t.end();
 });
@@ -115,14 +114,14 @@ test('MAP with null default on missing key', function (t) {
   var map = {'undefined_key': {key:'key_with_default', default: null}}
   var expect = {key_with_default: null}
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
   t.deepEqual(result, expect);
   t.end();
 });
 // test('parse with a slashed dot', function (t) {
 //   var k = 'abc\.def'
 //   var expect = ['[abc.def']
-//   var result = om.parse(k)
+//   var result = parse(k)
 //   t.deepEqual(result, expect);
 //   t.end();
 // });
@@ -168,7 +167,7 @@ var expect =
 
 
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -180,7 +179,7 @@ test('get value - one level deep', function (t) {
   var obj = { foo: { bar: "baz"} }
   var map = 'foo.bar'
   var expect = "baz"
-  var result = om.getKeyValue(obj, map)
+  var result = getKeyValue(obj, map)
 
   t.deepEqual(result, expect)
   t.end()
@@ -191,7 +190,7 @@ test('get value - starting with simple array', function (t) {
   var obj = ["bar"];
   var map = '[]';
   var expect = ["bar"];
-  var result = om.getKeyValue(obj, map);
+  var result = getKeyValue(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -202,7 +201,7 @@ test('get value - simple array defined index', function (t) {
   var obj = ["foo", "bar"]
   var map = '[1]'
   var expect = "bar"
-  var result = om.getKeyValue(obj, map)
+  var result = getKeyValue(obj, map)
 
   t.deepEqual(result, expect);
   t.end();
@@ -212,7 +211,7 @@ test('get value - simple array negative index', function (t) {
   var obj = ['foo', 'bar'];
   var map = '[-1]';
   var expect = 'bar';
-  var result = om.getKeyValue(obj, map);
+  var result = getKeyValue(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -222,7 +221,7 @@ test('get value - simple array dot property', function (t) {
   var obj = [{ name: 'foo' }, { name: 'bar' }];
   var map = '[-1].name';
   var expect = 'bar';
-  var result = om.getKeyValue(obj, map);
+  var result = getKeyValue(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -232,7 +231,7 @@ test('get value - simple array negative index falls off array', function (t) {
   var obj = ['foo', 'bar'];
   var map = '[-3]';
   var expect = null;
-  var result = om.getKeyValue(obj, map);
+  var result = getKeyValue(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -251,7 +250,7 @@ test('get value - two levels deep', function (t) {
 
   var expect = "bar";
 
-  var result = om.getKeyValue(obj, key);
+  var result = getKeyValue(obj, key);
 
   t.deepEqual(result, expect);
   t.end();
@@ -267,7 +266,7 @@ test('get value - one level deep and item is a array', function (t) {
 
   var expect = ["bar"];
 
-  var result = om.getKeyValue(obj, key);
+  var result = getKeyValue(obj, key);
 
   t.deepEqual(result, expect);
   t.end();
@@ -284,7 +283,7 @@ test('get value - one level deep and first item of array', function (t) {
 
   var expect = "foo";
 
-  var result = om.getKeyValue(obj, key);
+  var result = getKeyValue(obj, key);
 
   t.deepEqual(result, expect);
   t.end();
@@ -303,7 +302,7 @@ test('get value - one level deep and array and one level', function (t) {
 
   var expect = ["bar"];
 
-  var result = om.getKeyValue(obj, key);
+  var result = getKeyValue(obj, key);
 
   t.deepEqual(result, expect);
   t.end();
@@ -321,7 +320,7 @@ test('get value - one level deep and first item of array and one level', functio
 
   var expect = "bar";
 
-  var result = om.getKeyValue(obj, key);
+  var result = getKeyValue(obj, key);
 
   t.deepEqual(result, expect);
   t.end();
@@ -341,7 +340,7 @@ test('get value - one level deep and first item of array and two levels', functi
 
   var expect = "bar";
 
-  var result = om.getKeyValue(obj, key);
+  var result = getKeyValue(obj, key);
 
   t.deepEqual(result, expect);
   t.end();
@@ -367,7 +366,7 @@ test('get value - one level array', function (t) {
     }]
   }];
 
-  var result = om.getKeyValue(obj, key);
+  var result = getKeyValue(obj, key);
 
   t.deepEqual(result, expect);
   t.end();
@@ -389,7 +388,7 @@ test('get value - two level deep array', function (t) {
 
   var expect = [["bar", "var"]];
 
-  var result = om.getKeyValue(obj, key);
+  var result = getKeyValue(obj, key);
 
   t.deepEqual(result, expect);
   t.end();
@@ -409,7 +408,7 @@ test('get value - crazy', function (t) {
 
   var expect = "bar";
 
-  var result = om.getKeyValue(obj, key);
+  var result = getKeyValue(obj, key);
 
   t.deepEqual(result, expect);
   t.end();
@@ -430,7 +429,7 @@ test('get value - crazy negative', function (t) {
 
   var expect = "bar";
 
-  var result = om.getKeyValue(obj, key);
+  var result = getKeyValue(obj, key);
 
   t.deepEqual(result, expect);
   t.end();
@@ -441,7 +440,7 @@ test('select with array object where map is not an array 1', function (t) {
   var obj = { foo: [{bar: 'a'}, {bar: 'b'}, {bar: 'c'}] }
   var map = 'foo.bar'
   var expect = 'a'
-  var result = om.getKeyValue(obj, map)
+  var result = getKeyValue(obj, map)
   t.deepEqual(result, expect)
   t.end()
 })
@@ -450,7 +449,7 @@ test('select with array object where map is not an array 2', function (t) {
   var obj = { foo: [{bar: 'a'}, {bar: 'b'}, {bar: 'c'}] }
   var map = 'foo[].bar'
   var expect = ['a','b','c']
-  var result = om.getKeyValue(obj, map)
+  var result = getKeyValue(obj, map)
   t.deepEqual(result, expect);
   t.end();
 });
@@ -462,7 +461,7 @@ test('set value - simple', function (t) {
     foo: "bar"
   };
 
-  var result = om.setKeyValue(null, key, value);
+  var result = setKeyValue(null, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -480,7 +479,7 @@ test('set value - simple with base object', function (t) {
     foo: "bar"
   };
 
-  var result = om.setKeyValue(base, key, value);
+  var result = setKeyValue(base, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -491,7 +490,7 @@ test('set value - simple array', function (t) {
 
   var expect = ['bar'];
 
-  var result = om.setKeyValue(null, key, value);
+  var result = setKeyValue(null, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -503,7 +502,7 @@ test('set value - simple array with base array', function (t) {
   var base = ['foo'];
   var expect = ['bar'];
 
-  var result = om.setKeyValue(base, key, value);
+  var result = setKeyValue(base, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -514,7 +513,7 @@ test('set value - simple array in index 0', function (t) {
 
   var expect = ['bar'];
 
-  var result = om.setKeyValue(null, map, data);
+  var result = setKeyValue(null, map, data);
 
   t.deepEqual(result, expect);
   t.end();
@@ -526,7 +525,7 @@ test('set value - simple array in index 0 with base array', function (t) {
   var base = ['foo'];
   var expect = ['bar'];
 
-  var result = om.setKeyValue(base, key, value);
+  var result = setKeyValue(base, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -537,7 +536,7 @@ test('set value - simple array in index 1', function (t) {
 
   var expect = [, 'bar'];
 
-  var result = om.setKeyValue(null, map, data);
+  var result = setKeyValue(null, map, data);
 
   t.deepEqual(result, expect);
   t.end();
@@ -552,7 +551,7 @@ test('set value - one level deep', function (t) {
     }
   };
 
-  var result = om.setKeyValue({}, key, value);
+  var result = setKeyValue({}, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -565,7 +564,7 @@ test('set value - object inside simple array', function (t) {
     foo: 'bar'
   }];
 
-  var result = om.setKeyValue(null, key, value);
+  var result = setKeyValue(null, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -583,7 +582,7 @@ test('set value - array to object inside simple array', function (t) {
     }
   ];
 
-  var result = om.setKeyValue(null, key, value);
+  var result = setKeyValue(null, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -596,7 +595,7 @@ test('set value - object inside simple array defined index', function (t) {
     foo: 'bar'
   }];
 
-  var result = om.setKeyValue(null, key, data);
+  var result = setKeyValue(null, key, data);
 
   t.deepEqual(result, expect);
   t.end();
@@ -613,7 +612,7 @@ test('set value - two levels deep', function (t) {
     }
   };
 
-  var result = om.setKeyValue({}, key, value);
+  var result = setKeyValue({}, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -628,7 +627,7 @@ test('set value - one level deep inside array', function (t) {
     }
   };
 
-  var result = om.setKeyValue({}, key, value);
+  var result = setKeyValue({}, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -645,7 +644,7 @@ test('set value - one level deep inside array with one level deep', function (t)
     }
   };
 
-  var result = om.setKeyValue({}, key, value);
+  var result = setKeyValue({}, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -671,7 +670,7 @@ test('set value - one level deep inside array with one level deep inside a exist
     }
   };
 
-  var result = om.setKeyValue(base, key, value);
+  var result = setKeyValue(base, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -688,7 +687,7 @@ test('set value - one level deep inside array at defined index with one level de
     }
   };
 
-  var result = om.setKeyValue({}, key, value);
+  var result = setKeyValue({}, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -708,7 +707,7 @@ test('set value - array to simple object', function (t) {
     ]
   };
 
-  var result = om.setKeyValue({}, key, value);
+  var result = setKeyValue({}, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -730,7 +729,7 @@ test('set value - array to two level object', function (t) {
     }
   };
 
-  var result = om.setKeyValue({}, key, value);
+  var result = setKeyValue({}, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -756,7 +755,7 @@ test('set value - array to two level object', function (t) {
     }
   };
 
-  var result = om.setKeyValue({}, key, value);
+  var result = setKeyValue({}, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -775,7 +774,7 @@ test('set value - array to object', function (t) {
     }]
   };
 
-  var result = om.setKeyValue({}, key, value);
+  var result = setKeyValue({}, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -794,7 +793,7 @@ test('set value - crazy', function (t) {
     }
   };
 
-  var result = om.setKeyValue({}, key, value);
+  var result = setKeyValue({}, key, value);
 
   t.deepEqual(result, expect);
   t.end();
@@ -813,7 +812,7 @@ test('map object to another - simple', function (t) {
     'foo': 'bar'
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -836,7 +835,7 @@ test('map object to another - complexity 1', function (t) {
     'foo.bar': 'bar.foo'
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -861,7 +860,7 @@ test('map object to another - complexity 2', function (t) {
     'foo.bar': 'bar.foo[].baz'
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -891,7 +890,7 @@ test('map object to another - with base object', function (t) {
     'foo.bar': 'bar.foo[].baz'
   };
 
-  var result = om(obj, baseObject, map);
+  var result = objectMapper(obj, baseObject, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -916,7 +915,7 @@ test('map object to another - with two destinations for same value', function (t
     'foo': ['bar', 'baz']
   };
 
-  var result = om(from_obj, to_obj, map);
+  var result = objectMapper(from_obj, to_obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -946,7 +945,7 @@ test('map object to another - with two destinations for same value inside object
     'foo.bar': ['bar.foo.baz', 'bar.foo.foo']
   };
 
-  var result = om(obj, baseObject, map);
+  var result = objectMapper(obj, baseObject, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -976,7 +975,7 @@ test('map object to another - with two destinations for same value inside array'
     'foo.bar': ['bar.foo[].baz', 'bar.foo[].foo']
   };
 
-  var result = om(obj, baseObject, map);
+  var result = objectMapper(obj, baseObject, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1008,7 +1007,7 @@ test('map object to another - with three destinations for same value', function 
     'foo.bar': ['bar.foo[].baz', 'bar.foo[].foo', 'bar.foo[].bar[]']
   };
 
-  var result = om(obj, baseObject, map);
+  var result = objectMapper(obj, baseObject, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1040,7 +1039,7 @@ test('map object to another - with key object notation', function (t) {
     }
   };
 
-  var result = om(from_obj, to_obj, map);
+  var result = objectMapper(from_obj, to_obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1073,7 +1072,7 @@ test('map object to another - with key object notation with default value when k
     }
   };
 
-  var result = om(obj, baseObject, map);
+  var result = objectMapper(obj, baseObject, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1108,7 +1107,7 @@ test('map object to another - with key object notation with default function whe
     }
   };
 
-  var result = om(obj, baseObject, map);
+  var result = objectMapper(obj, baseObject, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1133,7 +1132,7 @@ test('map object to another - when target key is undefined it should be ignored'
     'a': undefined
    };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1165,7 +1164,7 @@ test('map object to another - with key object notation with default function ret
     'a' : 'bar.a'
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1200,7 +1199,7 @@ test('map object to another - with key object notation with transform', function
     }
   };
 
-  var result = om(obj, baseObject, map);
+  var result = objectMapper(obj, baseObject, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1237,7 +1236,7 @@ test('map object to another - with two destinations for same value one string an
     }]
   };
 
-  var result = om(obj, baseObject, map);
+  var result = objectMapper(obj, baseObject, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1267,7 +1266,7 @@ test('map object to another - with key array notation', function (t) {
     'foo.bar': [['bar.foo[].baz']]
   };
 
-  var result = om(obj, baseObject, map);
+  var result = objectMapper(obj, baseObject, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1296,7 +1295,7 @@ test('map object to another - with key array notation with default value when ke
     'notExistingKey': [['bar.foo[].baz', null, 10]]
   };
 
-  var result = om(obj, baseObject, map);
+  var result = objectMapper(obj, baseObject, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1328,7 +1327,7 @@ test('map object to another - with key array notation with default function when
     }]]
   };
 
-  var result = om(obj, baseObject, map);
+  var result = objectMapper(obj, baseObject, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1360,7 +1359,7 @@ test('map object to another - with key array notation with transform function', 
     }]]
   };
 
-  var result = om(obj, baseObject, map);
+  var result = objectMapper(obj, baseObject, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1389,7 +1388,7 @@ test('map object to another - map object without destination key via transform',
     'manual' : 'a1b1'
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1415,7 +1414,7 @@ test('array mapping - simple', function (t) {
     ]
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1449,7 +1448,7 @@ test('array mapping - two level deep', function (t) {
     ]
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1479,7 +1478,7 @@ test('array mapping - simple deep', function (t) {
     }
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1504,7 +1503,7 @@ test('array mapping - from/to specific indexes', function (t) {
     ]
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1526,7 +1525,7 @@ test('array mapping - fromObject is an array', function (t) {
     , {c: 'a2', d: 'b2'}
   ];
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1571,7 +1570,7 @@ test('array mapping - fromObject empty array property ignored', function (t) {
     }
   };
 
-  var result = om(obj, target, map);
+  var result = objectMapper(obj, target, map);
 
   t.deepEqual(result, expected);
   t.end();
@@ -1603,7 +1602,7 @@ test('mapping - map full array to single value via transform', function (t) {
     'thing2' : 'a1a2a3'
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1637,7 +1636,7 @@ test('mapping - map full array without destination key via transform', function 
     'manual' : 'a1a2a3'
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1664,7 +1663,7 @@ test('mapping - map full array to same array on destination side', function (t) 
     ]
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1693,7 +1692,7 @@ test('mapping - map and append full array to existing mapped array', function (t
       [ { a: 'a4', b: 'b4' }, { a: 'a5', b: 'b5' }, { a: 'a6', b: 'b6' } ]
     ]}
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1718,7 +1717,7 @@ test('map object to another - prevent null values from being mapped', function (
     'a': 'foo.a'
    };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1744,7 +1743,7 @@ test('map object to another - allow null values', function (t) {
     'a': 'foo.a'
    };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1772,15 +1771,14 @@ test('map object to another - allow null values', function (t) {
     'a': 'foo.a'
    };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
 });
 
 
-test('original various tests', function (t) {
-  var merge = require('../').merge;
+test('original various tests', function (t){
 
   var obj = {
     "sku": "12345"
@@ -1846,7 +1844,7 @@ test('original various tests', function (t) {
     }
   };
 
-  var result = merge(obj, {}, map);
+  var result = objectMapper(obj, {}, map);
 
   t.deepEqual(result, expected);
 
@@ -1859,14 +1857,14 @@ test('original various tests', function (t) {
 
   expected.Envelope.Request.Item.SKU = "over-ridden-sku";
 
-  result = merge(obj, {}, map);
+  result = objectMapper(obj, {}, map);
 
   t.deepEqual(result, expected, 'override sku');
 
   obj["inventory"] = null;
   expected.Envelope.Request.Item.Inventory = null;
 
-  result = merge(obj, {}, map);
+  result = objectMapper(obj, {}, map);
 
   t.deepEqual(result, expected, 'null inventory');
 
@@ -1924,7 +1922,7 @@ test('map array inside array to property', function (t) {
     'transfers[].target_route.driver': 'transfers[].target_route.driver'
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1950,7 +1948,7 @@ test('Mapping destination property with a literal dot', function (t) {
     }
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -1977,7 +1975,7 @@ test('Mapping destination property with wrong escaped dot', function (t) {
     }
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -2003,7 +2001,7 @@ test('Mapping destination property with two escaped dots', function (t) {
     }
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -2028,7 +2026,7 @@ test('Mapping destination property with backslash itself escaped', function (t) 
     }
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -2055,7 +2053,7 @@ test('Mapping properties with glob patterns', function (t) {
     'nodes.*.type': 'types'
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -2091,7 +2089,7 @@ test('Mapping properties with glob patterns with incomplete path', function (t) 
     'nodes.*': 'types'
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -2102,7 +2100,7 @@ test('Object is created when it should not be #57', function (t) {
   var expect
   const map = { key1: "a.b.c" }
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -2128,7 +2126,7 @@ test('Multi-level array issue #29', function (t) {
     values: ["b1", "b2"]
   }]}
 
-  var result = om(orig, map);
+  var result = objectMapper(orig, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -2159,7 +2157,7 @@ test('Ensure that boolean values work for both arrays and objects #37', function
   };
 
 
-  var result = om(from_obj, to_obj, map);
+  var result = objectMapper(from_obj, to_obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -2175,7 +2173,7 @@ test('Ensure that multi-dimentional arrays work #41', function (t) {
   };
 
   var expect = null
-  var result = om.getKeyValue(src, "arr[].arr[].id");
+  var result = getKeyValue(src, "arr[].arr[].id");
 
   t.deepEqual(result, expect);
   t.end();
@@ -2199,7 +2197,7 @@ test('Ensure that multi-dimentional arrays work #41', function (t) {
   var expect = {"arr":[{"id":1}]};
 
 
-  var result = om(src, map);
+  var result = objectMapper(src, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -2225,7 +2223,7 @@ test('Make sure no objects are created without data #48', function (t) {
    };
 
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -2241,7 +2239,7 @@ test('Make sure no objects are created without data #48', function (t) {
 //     "bifoo[].bar": "[]+"
 //   }
 //   var expect = [4, 33, 77, 97];
-//   var result = om(src, mapper);
+//   var result = objectMapper(src, mapper);
 //   t.deepEqual(result, expect);
 //   t.end();
 // });
@@ -2255,7 +2253,7 @@ test('Make sure no objects are created without data #48', function (t) {
 //     "bifoo[].bar": "num[]+"
 //   }
 //   var expect = {num: [4, 33, 77, 97] };
-//   var result = om(src, mapper2);
+//   var result = objectMapper(src, mapper2);
 //   t.deepEqual(result, expect);
 //   t.end();
 // });
@@ -2288,7 +2286,7 @@ test('Make sure no objects are created without data #48', function (t) {
 //         }
 //     ]
 // };
-//   var result = om(src, map);
+//   var result = objectMapper(src, map);
 //   t.deepEqual(result, expect);
 //   t.end();
 // });
@@ -2349,7 +2347,7 @@ test('Make sure no objects are created without data #48', function (t) {
 //         }
 //     ]
 // };
-//   var result = om(src, map);
+//   var result = objectMapper(src, map);
 //   t.deepEqual(result, expect);
 //   t.end();
 // });
@@ -2388,7 +2386,7 @@ test('Should correctly map to a subelement of indexed array item.', function (t)
     'nodes[].image': 'result[0].env.nodes[].image'
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -2568,7 +2566,7 @@ test('Should correctly map to a subelement of indexed array item deep in the obj
     "status": "policyHeader[0].statusCodeRef.value"
   };
 
-  var result = om(obj, map);
+  var result = objectMapper(obj, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -2578,7 +2576,7 @@ test('MAP Should correctly create an array and add if undlerlying data structure
   var src = {foo: {bar: 'baz'}}
   var map = { 'foo[].bar': 'abc[].def' }
   var expect = { abc: [ {def: 'baz'} ] }
-  var result = om(src, map)
+  var result = objectMapper(src, map)
 
   t.deepEqual(result, expect)
   t.end()
@@ -2599,7 +2597,7 @@ test("MAP Should correctly apply transform in array data #68", t => {
   var expect = {
     check: [1234, 5678, 9101]
   };
-  var result = om(src, map);
+  var result = objectMapper(src, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -2614,7 +2612,7 @@ test("issue #69: should create an array of values", t => {
 
   var expect = { id: [ 1235, 9876 ] };
 
-  var result = om(src, map);
+  var result = objectMapper(src, map);
 
   t.deepEqual(result, expect);
   t.end();
@@ -2633,12 +2631,12 @@ test("issue #71: mapping array should not fail when not defined", t => {
 
   const expect = { sizes: [] };
 
-  const result = om(src, map);
+  const result = objectMapper(src, map);
 
   t.deepEqual(result, expect);
   t.end();
 });
-
+// this isn't a valid issue as it relates to out goals, commenting out
 // test("issue #74: mapping empty array should result in empty array", t => {
 //   const src = {nbMember : 5, activityList: []};
 
@@ -2652,7 +2650,7 @@ test("issue #71: mapping array should not fail when not defined", t => {
 //     , maxPlayerCount: 5
 //   }
 
-//   const result = om(src, map);
+//   const result = objectMapper(src, map);
 
 //   t.deepEqual(result, expect);
 //   t.end();
@@ -2662,7 +2660,7 @@ test("should allow multiple source keys to be assigned to a destination", t => {
   const src = {k1: 'i', k2: 'am', k3: 'a string'};
   const map = { '[k1,k2,k3]': 'str'};
   const expect = {str: ['i', 'am', 'a string']};
-  const result = om(src, map);
+  const result = objectMapper(src, map);
   t.deepEqual(result, expect);
   t.end();
 });
@@ -2671,7 +2669,7 @@ test("should avoid other array edge cases", t => {
   const src = [{k1: {k3: ['foo', 'bar']} }];
   const map = { '[].k1.k3[]': 'str'};
   const expect = { str: [ [ 'foo', 'bar' ] ] };
-  const result = om(src, map);
+  const result = objectMapper(src, map);
   t.deepEqual(result, expect);
   t.end();
 });
@@ -2680,7 +2678,7 @@ test("should allow multiple source key maps to include spaces between keys", t =
   const src = {k1: 'i', k2: 'am', k3: 'a string'};
   const map = { '[k1, k2, k3]': 'str'};
   const expect = {str: ['i', 'am', 'a string']};
-  const result = om(src, map);
+  const result = objectMapper(src, map);
   t.deepEqual(result, expect);
   t.end();
 });
@@ -2692,7 +2690,7 @@ test("should allow multiple source keys to be transformed", t => {
     transform: (data) => data.join(' ')
   }};
   const expect = {str: 'i am a string'};
-  const result = om(src, map);
+  const result = objectMapper(src, map);
   t.deepEqual(result, expect);
   t.end();
 });
@@ -2703,7 +2701,7 @@ test("should omit null entries", t => {
     key: 'str',
   }};
   const expect = {str: ['i', 'am']};
-  const result = om(src, map);
+  const result = objectMapper(src, map);
   t.deepEqual(result, expect);
   t.end();
 });
@@ -2713,7 +2711,7 @@ test("should allow null entries when dest is nullable", t => {
     key: 'str?',
   }};
   const expect = {str: ['i', 'am', null]};
-  const result = om(src, map);
+  const result = objectMapper(src, map);
   t.deepEqual(result, expect);
   t.end();
 });
@@ -2774,7 +2772,5 @@ test('foo', t => {
   const src = {key1: 'yo', key2: 1, key3: [], CamelCaseKey: 'foo', 1:'bar'};
   const dest = {KEY1: 'yo', key_2: 1, 'key 3':[], 'camel_case_key':'not really', '1':1 } ;
   const map = generate(src, dest, {ignoreWhiteSpace: true, ignoreCase: true, ignoreSnake: true, ignoreType: true});
-
-  console.log(map);
   t.end();
 })

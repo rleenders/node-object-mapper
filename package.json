@@ -2,18 +2,18 @@
   "author": "Dan VerWeire <dverweire@gmail.com>",
   "name": "@leendersr/object-mapper",
   "description": "Copy properties from one object to another.",
-  "version": "6.2.1",
+  "version": "6.2.3",
   "repository": {
     "type": "git",
     "url": "git://github.com/rleenders/node-object-mapper.git"
   },
   "scripts": {
-    "test": "node test/test.js"
+    "test": "ts-node test/test.ts"
   },
   "devDependencies": {
     "debug": "^2.2.0",
-    "tape": "^4.0.1",
-    "perf_hooks": "0.0.1"
+    "perf_hooks": "0.0.1",
+    "tape": "^4.0.1"
   },
   "optionalDependencies": {},
   "engines": {
@@ -31,7 +31,9 @@
     "url": "https://github.com/rleenders/node-object-mapper/issues"
   },
   "homepage": "https://github.com/rleenders/node-object-mapper#readme",
-  "dependencies": {},
+  "dependencies": {
+    "@types/tape": "^4.2.34"
+  },
   "main": "dist/index.js",
   "directories": {
     "test": "test"

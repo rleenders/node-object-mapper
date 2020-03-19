@@ -2,6 +2,18 @@
 # yarn lockfile v1
 
 
+"@types/node@*":
+  version "13.9.2"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-13.9.2.tgz#ace1880c03594cc3e80206d96847157d8e7fa349"
+  integrity sha512-bnoqK579sAYrQbp73wwglccjJ4sfRdKU7WNEZ5FW4K2U6Kc0/eZ5kvXG0JKsEKFB50zrFmfFt52/cvBbZa7eXg==
+
+"@types/tape@^4.2.34":
+  version "4.2.34"
+  resolved "https://registry.yarnpkg.com/@types/tape/-/tape-4.2.34.tgz#008459b661a239eb7de81b417e5d104a352994e4"
+  integrity sha512-d3mILzYSlsPEALCiDYkRnkiYN4cl62dkaCg00Uql/FShIvdMOBFGtjP0N/cm0aCXwaAPVBS5weD4ciHAD8RtsA==
+  dependencies:
+    "@types/node" "*"
+
 balanced-match@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.0.tgz#89b4d199ab2bee49de164ea02b89ce462d71b767"
