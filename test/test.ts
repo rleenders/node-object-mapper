@@ -1798,7 +1798,7 @@ test('original various tests', function (t) {
   };
 
   var map = {
-    "sku": "Envelope.Request.Item.SKU"
+    "sku": {key: "Envelope.Request.Item.SKU", transform: (val: any, objFrom: any, objTo: any) => val}
     , "upc": "Envelope.Request.Item.UPC"
     , "title": "Envelope.Request.Item.ShortTitle"
     , "length": "Envelope.Request.Item.Dimensions.Length"
@@ -1852,7 +1852,7 @@ test('original various tests', function (t) {
 
   map.sku = {
     key: "Envelope.Request.Item.SKU"
-    , transform: function (val, objFrom, objTo) {
+    , transform: function (val, objFrom, objTo): string {
       return "over-ridden-sku";
     }
   };

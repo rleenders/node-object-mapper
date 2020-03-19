@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+      "module": "commonjs",
+      "declaration": true,
+      "strict": false, //disabling for now
+      "removeComments": true,
+      "allowSyntheticDefaultImports": true,
+      "emitDecoratorMetadata": true,
+      "experimentalDecorators": true,
+      "target": "ES2019",
+      "sourceMap": true,
+      "outDir": "dist",
+    },
+    "include": ["src/**/*", "index.ts"],
+    "exclude": [
+      "node_modules",
+      "test/**/*" // if your tests are in a separate directory from src
+    ]
+  }

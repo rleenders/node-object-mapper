@@ -27,4 +27,4 @@
 
  */
 
-module.exports = require('./src/object-mapper');
+export * from'./src/object-mapper';

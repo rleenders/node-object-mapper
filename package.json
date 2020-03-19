@@ -32,7 +32,7 @@
   },
   "homepage": "https://github.com/rleenders/node-object-mapper#readme",
   "dependencies": {},
-  "main": "index.js",
+  "main": "dist/index.js",
   "directories": {
     "test": "test"
   },

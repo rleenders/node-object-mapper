@@ -1,30 +1,42 @@
 'use strict';
 
-var _undefined
+interface O {
+  nulls?: Boolean;
+  name?: string;
+}
+interface A {
+  add?: Boolean;
+  ix?: string;
+}
+interface C{
+  transform?: Function;
+  default?: any;
+  src?: any;
+  srckey?: any;
+  destkey?: any;
+}
+
 
 /**
  * Map a object to another using the passed map
  * @param src
- * @param [dest]
  * @param [map]
  * @returns {*}
  * @constructor
  */
 
-function ObjectMapper(src, dest, map)
+function ObjectMapper(src: any , dest: any,  map: object): any
 {
-  // There are two different constructors - move around properties if needed
-  // e.g (ObjectMapper(from,map))
+
   if (typeof map === 'undefined') {
     map = dest
-    dest = _undefined
+    dest = undefined
   }
-
   // Loop through the map to process individual mapping instructions
   for (const srckey in map) {
     const destkey = map[srckey]
     // Extract the data from the source object or array
-    let data;
+    let data: any;
     if(isKeyArray(srckey)){
       const keys = splitKeyArray(srckey);
       data = keys.map(key => getKeyValue(src, key.trim()));
@@ -47,20 +59,18 @@ function ObjectMapper(src, dest, map)
   return dest
 }
 
-function isKeyArray(key) {
-  return key.match(/^\[(?<!\])(.*)(?<!\[)\]$/);
+function isKeyArray(key: string): Boolean {
+  return Boolean(key.match(/^\[(?<!\])(.*)(?<!\[)\]$/));
 }
 
-function splitKeyArray(key){
+function splitKeyArray(key: string): Array<string>{
   const result = key.match(/^\[(?<!\])(.*)(?<!\[)\]$/);
-  console.log(result[1]);
   return result[1].split(',');
 }
 
 // A string of how to navigate through the incoming array is sent.
 // This is translated into an array of instructions for the recursive object
-function getKeyValue(src, keystr)
-{
+export function getKeyValue(src: object | Array<any>, keystr: string): any {
   if(Array.isArray(src) && keystr.charAt(0) !== '['){
     keystr = `[]${keystr}`
   }
@@ -74,7 +84,7 @@ function getKeyValue(src, keystr)
 
 // With a given source key array, select the corresponding value(s) in the source object/array.
 // If the value does not exist, return null
-function select(src, keys)
+function select(src: any, keys: Array<any>)
 {
   // Get the object key or index that needs to be parsed
   const key = keys.shift()
@@ -92,7 +102,7 @@ function select(src, keys)
 }
 
 // Loop through the array and select the key from each value in the array.  If nothing comes back, return null
-function select_arr(src, key, keys)
+function select_arr(src: Array<any>, key: any, keys: Array<any>)
 {
   let data = []
 
@@ -132,14 +142,14 @@ function select_arr(src, key, keys)
 }
 
 // Allows negative array indexes to count down from end of array
-function negative_array_access(arr, ix)
+function negative_array_access(arr: Array<any>, ix: string)
 {
   var pix = parseInt(ix);
   return pix < 0 ? arr[arr.length + pix] : arr[ix];
 }
 
 // Traverse the given object for data using the given key array
-function select_obj(src, key, keys)
+function select_obj(src: object, key: O, keys: Array<any>)
 {
   // Make sure that there is data where we are looking
   if (src && key.name) {
@@ -170,7 +180,7 @@ function select_obj(src, key, keys)
 }
 
 // Loop through all the keys in the object and select the key from each key in the object.  If nothing comes back, return null
-function select_obj_keys(src, keys)
+function select_obj_keys(src: object, keys: Array<string>)
 {
   let data = []
   let n=0
@@ -192,7 +202,7 @@ function select_obj_keys(src, keys)
 }
 
 // The goal of this function is to identify the different ways that this function can be called, and to structure the data uniformly before caling update()
-function setKeyValue(dest, keystr, data, context = {})
+export function setKeyValue(dest: any, keystr: any, data: any, context: C = {})
 {
   // Keystr is undefined - call set_data in case there is a default or transformation to deal with
   if (typeof keystr == 'undefined' || keystr == null)
@@ -258,7 +268,7 @@ function setKeyValue(dest, keystr, data, context = {})
 }
 
 // if the data is an array, walk down the obj path and build until there is an array key
-function update(dest, data, keys, context)
+function update(dest: any, data: any, keys: any, context: C)
 {
   if (keys) {
     // Get the object key and index that needs to be parsed
@@ -279,7 +289,7 @@ function update(dest, data, keys, context)
 }
 
 // Update the destination object.key with the data
-function update_obj(dest, key, data, keys, context)
+function update_obj(dest: any, key: any, data: any, keys: any, context: C)
 {
   // There are further instructions remaining - we will need to recurse
   if (keys.length) {
@@ -307,7 +317,7 @@ function update_obj(dest, key, data, keys, context)
 }
 
 // Update the dest[] array with the data on each index
-function update_arr(dest, key, data, keys, context)
+function update_arr(dest: Array<any>, key: any, data: any, keys: any, context: C)
 {
   // The 'add' instruction is set.  This means to take the data and add it onto a new array node
   if (key.add) {
@@ -343,7 +353,7 @@ function update_arr(dest, key, data, keys, context)
     return update_arr_ix(dest, '0', data, keys, context)
 }
 
-function applyTransform(data, dest, context){
+function applyTransform(data: any, dest: any, context: C){
   if (typeof context.transform == 'function') {
     return context.transform(data, context.src, dest, context.srckey, context.destkey)
   }else{
@@ -351,7 +361,7 @@ function applyTransform(data, dest, context){
   }
 }
 
-function update_arr_ix(dest, ix, data, keys, context)
+function update_arr_ix(dest: any, ix: any, data: any, keys: any, context: C)
 {
   let o
   if (dest !== null && typeof dest !== 'undefined' && typeof dest[ix] !== 'undefined')
@@ -369,7 +379,7 @@ function update_arr_ix(dest, ix, data, keys, context)
 }
 
 // Set the given data into the given destination object
-function set_data(dest, key, data, context)
+function set_data(dest: any, key: any, data: any, context: C)
 {
   // See if data is null and there is a default
   if (typeof context.default !== 'undefined' && (data == null || typeof data == 'undefined')) {
@@ -405,7 +415,7 @@ function set_data(dest, key, data, context)
 
 // Turns a key string (like key1.key2[].key3 into ['key1','key2','[]','key3']...)
 //
-function parse(key_str, delimiter = '.')
+export function parse(key_str: any, delimiter = '.')
 {
   // Return null if the key_str is null
   if (key_str == null)
@@ -415,10 +425,11 @@ function parse(key_str, delimiter = '.')
   //const key_arr = key_str.split(delimiter)
   let keys = []
   let n = 0
+
   for (let i=0; i<key_arr.length; i++) {
     // Build a object which is either an object key or an array
     //  Note that this is not the most readable, but it is fastest way to parse the string (at this point in time)
-    let name_begin=-1, name_end=-1, ix_begin=-1, ix_end=-1, o = {}, a = {}, k = key_arr[i]
+    let name_begin=-1, name_end=-1, ix_begin=-1, ix_end=-1, o: O = {}, a: A = {}, k = key_arr[i]
     for (let j=0; j<k.length; j++) {
       switch (k[j]) {
         case '[' :
@@ -452,8 +463,9 @@ function parse(key_str, delimiter = '.')
   return keys
 }
 
+
 // Perform the same function as split(), but keep track of escaped delimiters
-function split(str, delimiter)
+function split(str: string, delimiter: string)
 {
   let arr = [], n = 0
   , esc = -99
@@ -485,7 +497,7 @@ function split(str, delimiter)
   return arr
 }
 
-function compareKeys(key1, key2, matchtypes){
+function compareKeys(key1: string, key2: string, matchtypes: any){
   if(key1 === key2){
     return true;
   }else if(matchtypes.ignoreType
@@ -507,10 +519,10 @@ function compareKeys(key1, key2, matchtypes){
   return key1 === key2;
 }
 
-function generate(source, destination, options = {}) {
-  const map = {};
+export function generate(source: object, destination: object, options = {}) {
+  const map: any = {};
   Object.keys(destination).forEach(dkey => {
-    const s = Object.keys(source).find((skey) => compareKeys(dkey, skey, options))
+    const s = Object.keys(source).filter((skey) => compareKeys(dkey, skey, options)).shift()
     if (s){
       map[s]= dkey;
     }
@@ -518,10 +530,4 @@ function generate(source, destination, options = {}) {
   return map;
 }
 
-module.exports = ObjectMapper
-module.exports.merge = ObjectMapper
-module.exports.getKeyValue = getKeyValue
-module.exports.setKeyValue = setKeyValue
-module.exports.parse = parse
-module.exports.split = split
-module.exports.generate = generate
+export default ObjectMapper;
